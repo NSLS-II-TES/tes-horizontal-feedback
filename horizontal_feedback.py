@@ -32,18 +32,21 @@ print(f"source position {source_pos.get():.6}")
 print(datetime.now().isoformat())
 
 
-def plan(FBref=-13700):
+def plan(FBref):
     yield from []
 
 
 def main():
     parser = argparse.ArgumentParser(
         description='TES horizontal feedback')
+    parser.add_argument(
+        'FBref', type=float
+        help="Target position. For example, -137000.")
     args = parser.parse_args()
     # config_bluesky_logging(level='INFO')
 
     RE = RunEngine()
-    RE(plan())
+    RE(plan(args.FBref))
 
 
 if __name__ == '__main__':
