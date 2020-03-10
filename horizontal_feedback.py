@@ -6,7 +6,7 @@ import sys
 
 from bluesky import RunEngine
 from ophyd import EpicsMotor, EpicsSignal
-from bluesky.log import config_bluesky_logging
+# from bluesky.log import config_bluesky_logging
 
 
 print = functools.partial(print, file=sys.stderr)
@@ -19,16 +19,16 @@ outb = EpicsSignal("XF:08BMES-BI{PSh:1-BPM:2}V-I", name="outb")
 pm.wait_for_connection()
 inb.wait_for_connection()
 outb.wait_for_connection()
-print("pico starting position {pico.get():.3}")
+print(f"pico starting position {pm.position:.6}")
 inb_initial = inb.get()
 outb_initial = outb.get()
-print("inboard signal {inb_initial:.3}")
-print("outboard signal {outb_initial:.3}")
+print(f"inboard signal {inb_initial:.6}")
+print(f"outboard signal {outb_initial:.6}")
 BPMpos = (outb_initial - inb_initial) / (outb_initial + inb_initial) * 1000000
-print("position {BPMpos:.3}")
+print(f"position {BPMpos:.4}")
 source_pos = EpicsSignal("SR:APHLA:SOFB{BUMP:C08-BMB}offset:X-I",
                          name="source_pos")
-print("source position {source_pos:.3}")
+print(f"source position {source_pos.get():.6}")
 print(datetime.now().isoformat())
 
 
@@ -40,7 +40,7 @@ def main():
     parser = argparse.ArgumentParser(
         description='TES horizontal feedback')
     args = parser.parse_args()
-    config_bluesky_logging(level='INFO')
+    # config_bluesky_logging(level='INFO')
 
     RE = RunEngine()
     RE(plan())
