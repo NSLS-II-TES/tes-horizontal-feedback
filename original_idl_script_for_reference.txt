@@ -1,0 +1,78 @@
+IDL program:  
+
+; set up
+FBref=-137000  
+pm=obj_new('EPICS_MOTOR','XF:08BMA-OP{Mono:1-Ax:Pico}Mtr')
+wait,1.0
+s=caget('XF:08BMA-OP{Mono:1-Ax:Pico}Mtr',pico)
+print, 'pico starting position  ',pico
+s=caget('XF:08BMES-BI{PSh:1-BPM:1}V-I',inb)
+print,'inboard signal   ',inb
+s=caget('XF:08BMES-BI{PSh:1-BPM:2}V-I',outb)
+print,'outboard signal  ',outb
+BPMpos=(outb-inb)/(inb+outb)*1000000
+print,'position  ',BPMpos
+s=caget('SR:APHLA:SOFB{BUMP:C08-BMB}offset:X-I',SourcePos)
+print,'source position  ',SourcePos
+te=systime()
+print,te
+
+; begin feedback loop
+for FBi=90,100 do begin
+	s=caget('XF:08BMA-OP{Mono:1-Ax:Pico}Mtr',pico)
+	s=caget('XF:08BMES-BI{PSh:1-BPM:1}V-I',inb)
+	s=caget('XF:08BMES-BI{PSh:1-BPM:2}V-I',outb)
+	BPMpos=(outb-inb)/(inb+outb)*1000000
+	print,'position  ',BPMpos,'    pico    ',pico
+	deltaPos=BPMpos-FBref
+	; check limits
+	FBi2=90
+	if (pico-1) lt -550.0 then FBi=101 else FBi=FBi2
+	if (pico-1) gt 400.0 then FBi=101
+	; check for no beam
+	if (inb lt 0.07) and (outb lt 0.07) then FBi=97
+	; compare and move as needed:  
+	if (deltaPos gt 20000) and (deltaPos lt 150000) and (FBi lt 96) then begin
+		pm->move,0.021,/relative
+		print,'moved 0.021'
+	endif
+	if (deltaPos lt -25000) and (deltaPos gt -150000) and (FBi lt 96) then begin
+		pm->move,-0.021,/relative
+		print,'moved -0.021'
+	endif
+	if (deltaPos gt 150000) and (deltaPos lt 400000) and (FBi lt 96) then begin
+		pm->move,0.063,/relative
+		print,'moved 0.063'
+	endif
+	if (deltaPos lt -150000) and (deltaPos gt -400000) and (FBi lt 96) then begin
+		pm->move,-0.063,/relative
+		print,'moved -0.063'
+	endif
+	if (deltaPos gt 400000) and (FBi lt 96) then begin
+		pm->move,0.200,/relative
+		te=systime()
+		print,'moved 0.200     ',te
+	endif
+	if (deltaPos lt -400000) and (FBi lt 96) then begin
+		pm->move,-0.200,/relative
+		te=systime()
+		print,'moved -0.200     ',te
+	endif
+	; set feedback frequency:  
+	wait,0.125
+	; if beam is lost, pause 30 sec and re-loop
+	if (FBi gt 96) and (FBi lt 99) then wait,30
+	if (FBi gt 96) and (FBi lt 99) then print,'lost signal, waiting 30 sec    ',te
+endfor
+
+wait,1.0
+s=caget('XF:08BMA-OP{Mono:1-Ax:Pico}Mtr',pico)
+print, fedback sopped...     pico  ',pico
+print,'inb   ',inb
+print,'outb  ',outb
+print,'position  ',BPMpos
+te=systime()
+print,te
+
+end
+
